@@ -82,10 +82,26 @@ class Hametuha_Zip_Search{
 					break;
 				}else{
 					$line = array_map(array($this, 'strip'), explode(',', $line));
-					$zip = $line[2];
-					$pref = mb_convert_encoding($line[6], "utf-8", 'sjis-win');
-					$city = mb_convert_encoding($line[7], "utf-8", 'sjis-win');
-					$town = mb_convert_encoding($line[8], "utf-8", 'sjis-win');
+					if(is_numeric($line[2])){
+						$zip = $line[2];
+						$pref = $line[6];
+						$city = $line[7];
+						$town = $line[8];
+						$street = "";
+						$office = '';
+					}else{
+						$zip = $line[7];
+						$pref = $line[3];
+						$city = $line[4];
+						$town = $line[5];
+						$street = $line[6];
+						$office = $line[2];
+					}
+					$pref = mb_convert_encoding($pref, "utf-8", 'sjis-win');
+					$city = mb_convert_encoding($city, "utf-8", 'sjis-win');
+					$town = mb_convert_encoding($town, "utf-8", 'sjis-win');
+					$street = mb_convert_encoding($street, "utf-8", 'sjis-win');
+					$office = mb_convert_encoding($office, "utf-8", 'sjis-win');
 					switch($_POST['action_name']){
 						case "add":
 							if($wpdb->get_var($wpdb->prepare("SELECT ID FROM {$this->table} WHERE zip = %s", $zip))){
@@ -93,16 +109,20 @@ class Hametuha_Zip_Search{
 								$wpdb->update($this->table,array(
 									'prefecture' => $pref,
 									'city' => $city,
-									'town' => $town
-								), array('zip' => $zip), array('%s', '%s', '%s'), array('%s'));
+									'town' => $town,
+									'street' => $street,
+									'office' => $office
+								), array('zip' => $zip), array('%s', '%s', '%s', '%s', '%s'), array('%s'));
 							}else{
 								//Insert
 								$wpdb->insert($this->table, array(
 									'zip' => $zip,
 									'prefecture' => $pref,
 									'city' => $city,
-									'town' => $town
-								), array('%s', '%s', '%s', '%s'));
+									'town' => $town,
+									'street' => $street,
+									'office' => $office
+								), array('%s', '%s', '%s', '%s', '%s', '%s'));
 							}
 							$done++;
 							break;
@@ -287,8 +307,11 @@ EOS;
 						prefecture VARCHAR(255) NOT NULL,
 						city VARCHAR(255) NOT NULL,
 						town MEDIUMTEXT NOT NULL,
+						street MEDIUMTEXT NOT NULL,
+						office MEDIUMTEXT NOT NULL,
 						PRIMARY KEY  (ID),
-						INDEX  (zip(3),prefecture(6))
+						INDEX  (zip(3)),
+						INDEX  (prefecture(6))
 					) ENGINE = MYISAM DEFAULT CHARSET = {$char};
 EOS;
 				require_once ABSPATH."wp-admin/includes/upgrade.php";
