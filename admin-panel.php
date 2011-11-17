@@ -33,7 +33,8 @@
 					</label>
 					<?php endforeach; ?>
 					<p class="description">
-						<a href="http://www.post.japanpost.jp/zipcode/download.html" target="_blank">日本郵便のWebサイト</a>からダウンロード＆解凍したCSVを<a href="<?php echo admin_url('media-new.php'); ?>">メディアページ</a>からアップロードしてください。
+						<a href="http://www.post.japanpost.jp/zipcode/download.html" target="_blank">日本郵便のWebサイト</a>からダウンロード＆解凍したCSVを<a href="<?php echo admin_url('media-new.php'); ?>">メディアページ</a>からアップロードしてください。<br />
+						ファイルには<a href="http://www.post.japanpost.jp/zipcode/dl/kogaki.html" taget="_blank">都道府県</a>のデータと<a href="http://www.post.japanpost.jp/zipcode/dl/jigyosyo/index.html" taget="_blank">事業所（私書箱）</a>のデータがあります。
 					</p>
 				</td>
 			</tr>
