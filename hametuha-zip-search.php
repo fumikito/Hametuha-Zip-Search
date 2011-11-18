@@ -11,6 +11,7 @@
  */
 
 class Hametuha_Zip_Search{
+	
 	/**
 	 * @var string
 	 */
@@ -20,6 +21,11 @@ class Hametuha_Zip_Search{
 	 * @var string
 	 */
 	private $table = 'zips';
+	
+	/**
+	 * @var boolean
+	 */
+	public $use = false;
 	
 	/**
 	 * Constructor
@@ -32,6 +38,10 @@ class Hametuha_Zip_Search{
 		add_action('admin_init', array($this, 'admin_init'));
 		add_action('plugins_loaded', array($this, 'activate'));
 		add_action('wp_ajax_hametuha_zip_edit', array($this, 'admin_ajax'));
+		add_action('wp_ajax_hametuha_zip_search', array($this, 'ajax'));
+		add_action('wp_ajax_nopriv_hametuha_zip_search', array($this, 'ajax'));
+		add_action('template_redirect',array($this, 'template_redirect'));
+		add_action('wp_print_footer_scripts', array($this, 'footer_script'), 1);
 	}
 	
 	/**
@@ -62,6 +72,11 @@ class Hametuha_Zip_Search{
 		}
 	}
 	
+	/**
+	 * Do ajax action to edit zip data on admin panel
+	 * 
+	 * @global wpdb $wpdb 
+	 */
 	public function admin_ajax(){
 		global $wpdb;
 		set_time_limit(0);
@@ -330,5 +345,87 @@ EOS;
 		$wpdb->query("DROP TABLE {$this->table}");
 		delete_option('hametuha_zip_search_version');
 	}
+	
+	/**
+	 * Enqueue script for zip
+	 */
+	public function template_redirect(){
+		wp_enqueue_script('hametuha-zip-search', plugin_dir_url(__FILE__).'hametuha-zip-search.js', array('jquery'), $this->version, true);
+	}
+	
+	/**
+	 * Dequeue script if not used.
+	 * @global WP_Scripts $wp_scripts 
+	 */
+	public function footer_script(){
+		$handle = 'hametuha-zip-search';
+		global $wp_scripts;
+		//Remove script queue script if any tag is used.
+		if(!$this->use){
+			$key = array_search($handle, $wp_scripts->in_footer);
+			if(false !== $key){
+				unset($wp_scripts->infooter[$key]);
+			}
+			unset($wp_scripts->registered[$handle]);
+			$key = array_search($handle, $wp_scripts->queue);
+			if(false !== $key){
+				unset($wp_scripts->queue[$key]);
+			}
+		}else{
+			wp_localize_script('hametuha-zip-search', 'HametuhaZipSearch', array(
+				'endpoint' => admin_url('admin-ajax.php'),
+				'nonce' => wp_create_nonce('hametuha_zip_search'),
+				'action' => 'hametuha_zip_search'
+			));
+		}
+	}
+	
+	/**
+	 * Do ajax action for zip search
+	 * @global wpdb $wpdb
+	 */
+	public function ajax(){
+		global $wpdb;
+		if(isset($_POST['nonce'], $_POST['zip']) && wp_verify_nonce($_POST['nonce'], 'hametuha_zip_search')){
+			$zip = (string)$_POST['zip'];
+			$result = array();
+			if(strlen($zip) > 2){
+				$sql = <<<EOS
+					SELECT * FROM {$this->table}
+					WHERE zip LIKE %s
+EOS;
+				$rows = $wpdb->get_results($wpdb->prepare($sql, $zip.'%'));
+				foreach($rows as $row){
+					$result[] = array(
+						'zip' => $row->zip,
+						'prefecture' => $row->prefecture,
+						'city' => $row->city,
+						'town' => $row->town,
+						'street' => $row->street,
+						'office' => $row->office
+					);
+				}
+			}
+			header('Content-Type: application/json');
+			echo json_encode($result);
+			die();
+		}
+	}
 }
 $hametuha_zip_search = new Hametuha_Zip_Search();
+
+/**
+ * Output zipcode button
+ * @global Hametuha_Zip_Search $hametuha_zip_search
+ * @param string $text
+ * @param array $extra_classes 
+ */
+function zip_search_button($text = '住所自動入力', $extra_classes = array()){
+	global $hametuha_zip_search;
+	$hametuha_zip_search->use = true;
+	$classes = implode(' ', array_merge(array_map(create_function('$string', 'return (string)$string;'), (array)$extra_classes), array('hametuha-zip-search')));
+	$text = htmlspecialchars((string)$text, ENT_QUOTES, 'utf-8');
+	echo <<<EOS
+<input type="button" class="{$classes}" value="{$text}" />
+EOS;
+}
