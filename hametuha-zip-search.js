@@ -88,7 +88,8 @@ jQuery(document).ready(function($){
 									callback: function(){
 									}
 								});
-							}
+							},
+							social_tools: ''
 						});
 						//prettyPhoto開く
 						$.prettyPhoto.open('#zipcode-container', "複数の候補が見つかりました", "ボタンを押して、候補から選択してください");
