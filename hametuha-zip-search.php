@@ -15,7 +15,7 @@ class Hametuha_Zip_Search{
 	/**
 	 * @var string
 	 */
-	private $version = '1.0';
+	private $version = '1.1';
 	
 	/**
 	 * @var string
@@ -40,7 +40,7 @@ class Hametuha_Zip_Search{
 		add_action('wp_ajax_hametuha_zip_edit', array($this, 'admin_ajax'));
 		add_action('wp_ajax_hametuha_zip_search', array($this, 'ajax'));
 		add_action('wp_ajax_nopriv_hametuha_zip_search', array($this, 'ajax'));
-		add_action('template_redirect',array($this, 'template_redirect'));
+		add_action('wp_print_scripts',array($this, 'print_scirpt'));
 		add_action('wp_print_footer_scripts', array($this, 'footer_script'), 1);
 	}
 	
@@ -322,8 +322,9 @@ EOS;
 	/**
 	 * Enqueue script for zip
 	 */
-	public function template_redirect(){
-		wp_enqueue_script('hametuha-zip-search', plugin_dir_url(__FILE__).'hametuha-zip-search.js', array('jquery'), $this->version, true);
+	public function print_scirpt(){
+		wp_enqueue_style('wp-jquery-ui-dialog');
+		wp_enqueue_script('hametuha-zip-search', plugin_dir_url(__FILE__).'hametuha-zip-search.js', array('jquery', 'jquery-ui-dialog'), $this->version, true);
 	}
 	
 	/**
@@ -345,11 +346,22 @@ EOS;
 				unset($wp_scripts->queue[$key]);
 			}
 		}else{
-			wp_localize_script('hametuha-zip-search', 'HametuhaZipSearch', array(
-				'endpoint' => admin_url('admin-ajax.php'),
+			$endpoint = admin_url('admin-ajax.php');
+			if(!is_ssl()){
+				$endpoint = str_replace('https://', 'http://', $endpoint);
+			}
+			$names = apply_filters("hametuha_zip_search_names", array(
+				'zipName' => 'zipcode',
+				'prefName' => 'prefecture',
+				'cityName' => 'city',
+				'streetName' => 'street',
+				'officeName' => 'office'
+			));
+			wp_localize_script('hametuha-zip-search', 'HametuhaZipSearch', array_merge(array(
+				'endpoint' => $endpoint,
 				'nonce' => wp_create_nonce('hametuha_zip_search'),
 				'action' => 'hametuha_zip_search'
-			));
+			), $names));
 		}
 	}
 	

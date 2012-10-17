@@ -8,29 +8,18 @@ jQuery(document).ready(function($){
 		var f = target.parents('form');
 		HametuhaZipSearch.zip = f.find('input[name=zipcode]').val().replace(/[^0-9]/g, "");
 		var fillForm = function(address){
-			f.find('input[name=zipcode]').val(address.zip);
-			f.find('input[name=prefecture]').val(address.prefecture);
-			f.find('select[name=prefecture] option').each(function(index, elt){
+			f.find('input[name=' + HametuhaZipSearch.zipName + ']').val(address.zip);
+			f.find('input[name=' + HametuhaZipSearch.prefName + ']').val(address.prefecture);
+			f.find('select[name=' + HametuhaZipSearch.prefName + '] option').each(function(index, elt){
 				if($(elt).text() == address.prefecture){
 					$(elt).attr('selected', true);
 				}
 			});
-			f.find('input[name=city]').val(address.city);
+			f.find('input[name=' + HametuhaZipSearch.cityName + ']').val(address.city);
 			var town = address.town;
-			if(town.match(/（/)){
-				switch(true){
-					case town.match(/地階/):
-						break;
-					case town.match(/階）$/):
-						break;
-					default:
-						town = town.replace(/（.*?）/, '');
-						break;
-				}
-			}
 			town = town.replace(/以下に掲載がない場合/, '');
-			f.find('input[name=street]').val(town + address.street);
-			f.find('input[name=office]').val(address.office);
+			f.find('input[name=' + HametuhaZipSearch.streetName + ']').val(town + address.street);
+			f.find('input[name=' + HametuhaZipSearch.officeName + ']').val(address.office);
 		};
 		$.post(
 			HametuhaZipSearch.endpoint,
@@ -58,27 +47,58 @@ jQuery(document).ready(function($){
 							return li;
 						}
 						//Create display Container
-						var container = document.createElement("div");
-						$(container).attr('id', 'zipcode-container').css("display", "none");
-						$(container).html('<div class="zipcode-inner"><h3>住所</h3><ul class="notice"></ul><h3>事業所</h3><ul class="notice"></ul></div>');
-						//Insert to view port
-						f.append(container);
-						$(container).find('div').css({width: "auto", height: "350px", overflow: 'auto'});
-						//住所の場合
+						var container = $('<div title="複数の候補が見つかりました"></div>');
+						var curPage = 1;
+						var perPage = 5;
+						var totalPage = Math.ceil(results.length / perPage);
+						//住所を追加
 						for(i = 0, l = results.length; i < l; i++){
-							if(results[i].office != ''){
-								$("#zipcode-container ul:last").append(makeLine(results[i], i));
-							}else{
-								$("#zipcode-container ul:first").append(makeLine(results[i], i));
+							if(i % perPage == 0){
+								container.append('<ol start="' + (i + 1) + '"></ol>');
+								if(i > 0){
+									container.find('ol:last').css('display', 'none');
+								}
 							}
+							container.find("ol:last").append(makeLine(results[i], i));
+						}
+						//ページネーション追加
+						if(totalPage > 1){
+							var pagenator = $('<div>' +
+								'<a href="#next" class="ui-state-default ui-corner-all" style="float:right;"><span class="ui-icon ui-icon-circle-triangle-e next"></span></a>' +
+								'<a href="#prev" class="ui-state-default ui-corner-all" style="float:right; margin-right: 1em;"><span class="ui-icon ui-icon-circle-triangle-w next"></span></a>' +
+								'<span class="current">' + curPage + '</span> / ' +
+								'<span class="total">' + totalPage + '</span>' +
+								'</div>');
+							pagenator.find('a').click(function(e){
+								e.preventDefault();
+								if($(this).attr('href').match(/next/)){
+									curPage = Math.min(curPage + 1, totalPage);
+								}else{
+									curPage = Math.max(1, curPage - 1);
+								}
+								container.find('ol').each(function(index, ol){
+									if(index + 1 == curPage){
+										$(ol).css('display', 'block');
+									}else{
+										$(ol).css('display', 'none');
+									}
+									pagenator.find('.current').text(curPage);
+								});
+							});
+							container.prepend(pagenator);
 						}
 						//コールバック登録
+						container.find('input[type=button]').click(function(e){
+							e.preventDefault();
+							var hidden = $(this).prev('input');
+							fillForm(results[hidden.val()]);
+							container.dialog( "close" );
+						});
+						/*
 						$.fn.prettyPhoto({
 							changepicturecallback: function(){ //開いたときに発生するイベント
 								$('#zipcode-container').remove();
 								$(".zipcode-inner input[type=button]").click(function(e){
-									var hidden = $(this).prev('input');
-									fillForm(results[hidden.val()]);
 									$.prettyPhoto.close();
 								});
 							},
@@ -91,11 +111,24 @@ jQuery(document).ready(function($){
 							},
 							social_tools: ''
 						});
+						*/
 						//prettyPhoto開く
-						$.prettyPhoto.open('#zipcode-container', "複数の候補が見つかりました", "ボタンを押して、候補から選択してください");
+						container.dialog({
+							modal: true
+						});
 					}
 				}else{
-					alert('該当する住所は見つかりませんでした');
+					var tag = '<div title="Not Found">' +
+						'<p><span class="ui-icon ui-icon-alert" style="float: left; margin: 0 7px 50px 0;"></span>' +
+						'該当する住所は見つかりませんでした。別の郵便番号でお試しください。</p></div>';
+					$(tag).dialog({
+					   modal: true,
+					   buttons: {
+						   Ok: function() {
+							   $( this ).dialog( "close" );
+						   }
+					   }
+				   });
 				}
 				target.removeClass('hametuha-zip-search-loading');
 				target.val(originalVal);
