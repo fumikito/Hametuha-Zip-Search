@@ -94,25 +94,7 @@ jQuery(document).ready(function($){
 							fillForm(results[hidden.val()]);
 							container.dialog( "close" );
 						});
-						/*
-						$.fn.prettyPhoto({
-							changepicturecallback: function(){ //開いたときに発生するイベント
-								$('#zipcode-container').remove();
-								$(".zipcode-inner input[type=button]").click(function(e){
-									$.prettyPhoto.close();
-								});
-							},
-							callback: function(){ //閉じたときに呼び出されるコールバック
-								$.fn.prettyPhoto({
-									changepicturecallback: function(){},
-									callback: function(){
-									}
-								});
-							},
-							social_tools: ''
-						});
-						*/
-						//prettyPhoto開く
+						//ダイアログ開く
 						container.dialog({
 							modal: true
 						});
