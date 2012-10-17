@@ -40,7 +40,7 @@ class Hametuha_Zip_Search{
 		add_action('wp_ajax_hametuha_zip_edit', array($this, 'admin_ajax'));
 		add_action('wp_ajax_hametuha_zip_search', array($this, 'ajax'));
 		add_action('wp_ajax_nopriv_hametuha_zip_search', array($this, 'ajax'));
-		add_action('wp_print_scripts',array($this, 'print_scirpt'));
+		add_action('wp_enqueue_scripts',array($this, 'print_scirpt'), 1);
 		add_action('wp_print_footer_scripts', array($this, 'footer_script'), 1);
 	}
 	
@@ -323,7 +323,7 @@ EOS;
 	 * Enqueue script for zip
 	 */
 	public function print_scirpt(){
-		wp_enqueue_style('wp-jquery-ui-dialog');
+		wp_enqueue_style('hametuha-zip-search-ui', plugin_dir_url(__FILE__).'overcast/jquery-ui-1.9.0.custom.min.css', '1.9.0');
 		wp_enqueue_script('hametuha-zip-search', plugin_dir_url(__FILE__).'hametuha-zip-search.js', array('jquery', 'jquery-ui-dialog'), $this->version, true);
 	}
 	
